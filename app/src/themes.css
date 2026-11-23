@@ -44,3 +44,32 @@
   --color-shell: #fafafa;
   --color-shell-panel: #ffffff;
 }
+
+/* KhonaiMo — warm "home" palette: cream paper, leafy green primary, terracotta accent. */
+[data-theme="khonaimo"] {
+  color-scheme: light;
+  --radius: 0.875rem;
+  --color-background: #fbf7f0;
+  --color-foreground: #2b2620;
+  --color-card: #ffffff;
+  --color-card-foreground: #2b2620;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #2b2620;
+  --color-primary: #2f7a5b;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1ebe0;
+  --color-secondary-foreground: #2b2620;
+  --color-muted: #f1ebe0;
+  --color-muted-foreground: #6f665a;
+  --color-accent: #fde7d9;
+  --color-accent-foreground: #8a3b16;
+  --color-destructive: #c2410c;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e8dfd0;
+  --color-input: #e2d8c6;
+  --color-ring: #2f7a5b;
+  --shadow-card: 0 1px 2px 0 rgba(60, 45, 20, 0.05);
+  --shadow-card-hover: 0 4px 14px 0 rgba(60, 45, 20, 0.08);
+  --color-shell: #f6f0e5;
+  --color-shell-panel: #ffffff;
+}

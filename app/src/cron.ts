@@ -13,8 +13,7 @@ import { buildCronContext } from 'deepspace/worker'
 import type { Env } from '../worker'
 import { nextDueDate, todayIn } from './lib/dates'
 
-export const RESET_TASK = 'reset-recurring-chores'
-export const RESET_TIMEZONE = 'America/New_York'
+import { RESET_TASK, RESET_TIMEZONE } from './cron-names'
 
 export const tasks: CronTask[] = [
   { name: RESET_TASK, schedule: '5 0 * * *', timezone: RESET_TIMEZONE },

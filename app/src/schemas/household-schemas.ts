@@ -15,7 +15,7 @@
  *     because they touch rows the caller can't write directly.
  */
 
-import type { CollectionSchema } from 'deepspace/schema'
+import type { CollectionSchema, RolePermissions } from 'deepspace/schema'
 
 export const householdsSchema: CollectionSchema = {
   name: 'households',
@@ -56,14 +56,14 @@ export const teamMembersSchema: CollectionSchema = {
   },
 }
 
-const choreMemberRules = {
+const choreMemberRules: RolePermissions = {
   read: 'team',
   create: true,
   update: 'team',
   delete: 'team',
   // householdId is set on create only; it can't be moved to another household.
   writableFields: ['householdId', 'title', 'assigneeId', 'dueDate', 'done', 'doneAt', 'doneBy', 'repeat'],
-} as const
+}
 
 export const choresSchema: CollectionSchema = {
   name: 'chores',
@@ -84,13 +84,13 @@ export const choresSchema: CollectionSchema = {
   },
 }
 
-const expenseMemberRules = {
+const expenseMemberRules: RolePermissions = {
   read: 'team',
   create: true,
   update: 'team',
   delete: 'team',
   writableFields: ['householdId', 'description', 'amountCents', 'payerId', 'splitAmong', 'spentOn'],
-} as const
+}
 
 export const expensesSchema: CollectionSchema = {
   name: 'expenses',

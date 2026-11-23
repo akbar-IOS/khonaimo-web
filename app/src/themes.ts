@@ -18,6 +18,11 @@
 
 export const THEMES = [
   {
+    id: 'khonaimo',
+    label: 'KhonaiMo',
+    description: 'Warm household theme: cream, leafy green, terracotta.',
+  },
+  {
     id: 'slate',
     label: 'Slate',
     description: 'Neutral dark placeholder default. Replace with your own theme.',

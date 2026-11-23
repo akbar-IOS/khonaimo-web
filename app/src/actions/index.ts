@@ -34,20 +34,20 @@ async function getHousehold(tools: ActionTools, householdId: string): Promise<En
   if (!householdId) return null
   const r = await tools.get('households', householdId)
   if (!r.success) return null
-  return (r.data as { record: Envelope<Household> }).record
+  return (r.data as unknown as { record: Envelope<Household> }).record
 }
 
 async function findMembership(tools: ActionTools, teamId: string, userId: string): Promise<Envelope<TeamMember> | null> {
   const r = await tools.query('team_members', { where: { teamId, userId }, limit: 1 })
   if (!r.success) return null
-  return ((r.data as { records: Envelope<TeamMember>[] }).records[0]) ?? null
+  return ((r.data as unknown as { records: Envelope<TeamMember>[] }).records[0]) ?? null
 }
 
 async function callerName(tools: ActionTools, userId: string): Promise<string> {
   // Server code sees full users rows; keep only the display name.
   const r = await tools.get('users', userId)
   if (!r.success) return ''
-  const data = (r.data as { record: { data: { name?: string } } }).record.data
+  const data = (r.data as unknown as { record: { data: { name?: string } } }).record.data
   return str(data.name)
 }
 
@@ -87,7 +87,7 @@ export const actions: Record<string, ActionHandler<Env>> = {
     if (!code) return { success: false, error: 'Enter an invite code.' }
     const found = await tools.query('households', { where: { inviteCode: code }, limit: 1 })
     if (!found.success) return found
-    const household = (found.data as { records: Envelope<Household>[] }).records[0]
+    const household = (found.data as unknown as { records: Envelope<Household>[] }).records[0]
     if (!household) return { success: false, error: 'No household uses that invite code.' }
     const householdId = household.recordId
 
