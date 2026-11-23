@@ -28,3 +28,18 @@ export function friendlyDate(ymd: string, today = todayIn()): string {
   const [y, m, d] = ymd.split('-').map(Number)
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
 }
+
+/**
+ * The nightly reset rule for one chore. Returns the patch to apply, or null to leave it alone:
+ * a repeating chore that is done and whose due date has arrived reopens on its next due date.
+ */
+export function reopenPatch(
+  chore: { done?: boolean | number; dueDate?: string; repeat?: string },
+  today: string,
+): { done: false; doneAt: ''; doneBy: ''; dueDate: string } | null {
+  if (chore.repeat !== 'daily' && chore.repeat !== 'weekly') return null
+  if (!chore.done) return null
+  const due = chore.dueDate || today
+  if (due > today) return null // finished early; reopens once its due date arrives
+  return { done: false, doneAt: '', doneBy: '', dueDate: nextDueDate(due, chore.repeat, today) }
+}

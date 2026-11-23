@@ -204,7 +204,7 @@ function ChoreRow({
           {c.repeat && c.repeat !== 'none' && (
             <span className="inline-flex items-center gap-1"><RepeatIcon className="h-3.5 w-3.5" aria-hidden />{c.repeat}</span>
           )}
-          {c.done && doneBy && <span>done by {firstName(doneBy.name)}</span>}
+          {!!c.done && doneBy && <span>done by {firstName(doneBy.name)}</span>}
         </p>
       </div>
       <label className="flex items-center gap-1.5" title="Assigned to">

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { netBalances, parseMoney, settleUp, splitShares } from './balances'
-import { nextDueDate } from './dates'
+import { nextDueDate, reopenPatch } from './dates'
 
 describe('splitShares', () => {
   it('is penny-exact', () => {
@@ -47,5 +47,20 @@ describe('nextDueDate', () => {
     expect(nextDueDate('2026-11-22', 'daily', '2026-11-23')).toBe('2026-11-23')
     expect(nextDueDate('2026-11-10', 'daily', '2026-11-23')).toBe('2026-11-23')
     expect(nextDueDate('2026-11-21', 'weekly', '2026-11-23')).toBe('2026-11-28')
+  })
+})
+
+describe('reopenPatch (nightly reset rule)', () => {
+  const today = '2026-11-24'
+  it('reopens a done daily chore that was due yesterday, due today', () => {
+    expect(reopenPatch({ done: 1, dueDate: '2026-11-23', repeat: 'daily' }, today)).toEqual({ done: false, doneAt: '', doneBy: '', dueDate: '2026-11-24' })
+  })
+  it('leaves open, one-off, and finished-early chores alone', () => {
+    expect(reopenPatch({ done: 0, dueDate: '2026-11-23', repeat: 'daily' }, today)).toBeNull()
+    expect(reopenPatch({ done: true, dueDate: '2026-11-23', repeat: 'none' }, today)).toBeNull()
+    expect(reopenPatch({ done: true, dueDate: '2026-11-27', repeat: 'weekly' }, today)).toBeNull()
+  })
+  it('moves a weekly chore a week out', () => {
+    expect(reopenPatch({ done: true, dueDate: '2026-11-24', repeat: 'weekly' }, today)?.dueDate).toBe('2026-12-01')
   })
 })

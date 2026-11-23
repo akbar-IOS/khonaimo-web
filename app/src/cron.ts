@@ -11,7 +11,7 @@
 import type { CronTask } from 'deepspace/worker'
 import { buildCronContext } from 'deepspace/worker'
 import type { Env } from '../worker'
-import { nextDueDate, todayIn } from './lib/dates'
+import { reopenPatch, todayIn } from './lib/dates'
 
 import { RESET_TASK, RESET_TIMEZONE } from './cron-names'
 
@@ -30,15 +30,9 @@ export async function runTask(name: string, env: Env): Promise<void> {
   for (const repeat of ['daily', 'weekly'] as const) {
     const rows = (await ctx.records.query('chores', { where: { repeat }, limit: 5000 })) as ChoreRow[]
     for (const row of rows) {
-      if (!row.data.done) continue
-      const due = row.data.dueDate || today
-      if (due > today) continue // finished early; reopens when its due date arrives
-      await ctx.records.update('chores', row.recordId, {
-        done: false,
-        doneAt: '',
-        doneBy: '',
-        dueDate: nextDueDate(due, repeat, today),
-      })
+      const patch = reopenPatch(row.data, today)
+      if (!patch) continue
+      await ctx.records.update('chores', row.recordId, patch)
       reopened++
     }
   }
