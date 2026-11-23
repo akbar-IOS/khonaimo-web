@@ -120,6 +120,34 @@ async function resolveDocsYjsRole(
   return null
 }
 
+/**
+ * Is `userId` an active member of household `teamId`? Reads team_members via the
+ * RecordRoom's internal tools endpoint (same pattern as getDocumentForAccess above).
+ * Fails closed on any error.
+ */
+async function isActiveHouseholdMember(env: Env, teamId: string, userId: string): Promise<boolean> {
+  const stub = env.RECORD_ROOMS.get(env.RECORD_ROOMS.idFromName(`app:${env.DEEPSPACE_APP_ID}`))
+  try {
+    const res = await stub.fetch(
+      new Request('https://internal/api/tools/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-User-Id': env.OWNER_USER_ID, 'X-App-Action': 'true' },
+        body: JSON.stringify({
+          tool: 'records.query',
+          params: { collection: 'team_members', where: { teamId, userId }, limit: 1 },
+        }),
+      }),
+    )
+    const json = (await res.json()) as { success?: boolean; data?: { records?: { data?: { status?: string } }[] } }
+    const row = json.success ? json.data?.records?.[0] : undefined
+    return !!row && row.data?.status !== 'removed'
+  } catch {
+    return false
+  }
+}
+
+const HOUSEHOLD_PRESENCE_PREFIX = 'household:'
+
 export function registerRealtimeRoutes(app: Hono<AppContext>): void {
   app.get(
     '/ws/:roomId',
@@ -150,10 +178,27 @@ export function registerRealtimeRoutes(app: Hono<AppContext>): void {
     ),
   )
 
-  app.get(
-    '/ws/presence/:scopeId',
-    wsRoute((env) => env.PRESENCE_ROOMS),
-  )
+  // Household presence rooms (`household:<id>`) only admit signed-in, active members,
+  // so outsiders can't see who's home. Other scopes keep the default route.
+  const presenceRoute = wsRoute((env) => env.PRESENCE_ROOMS)
+  app.get('/ws/presence/:scopeId', async (c) => {
+    let scopeId = c.req.param('scopeId')
+    try {
+      scopeId = decodeURIComponent(scopeId) // idempotent for our ids; guards an encoded ':' slipping past the prefix check
+    } catch {
+      return new Response('Bad scope', { status: 400 })
+    }
+    if (scopeId.toLowerCase().startsWith(HOUSEHOLD_PRESENCE_PREFIX)) {
+      const token = new URL(c.req.url).searchParams.get('token')
+      const auth = token ? (await verifyJwt(jwtConfig(c.env), token)).result : null
+      if (!auth) return new Response('Unauthorized', { status: 401 })
+      const householdId = scopeId.slice(HOUSEHOLD_PRESENCE_PREFIX.length)
+      if (!(await isActiveHouseholdMember(c.env, householdId, auth.userId))) {
+        return new Response('Forbidden', { status: 403 })
+      }
+    }
+    return presenceRoute(c)
+  })
 
   app.get(
     '/ws/cron/:roomId',

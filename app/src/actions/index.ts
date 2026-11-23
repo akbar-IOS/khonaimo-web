@@ -7,15 +7,18 @@
  *   - joinHousehold:   caller must present the household's current invite code.
  *   - removeMember / deleteHousehold / regenerateInvite: caller must be the household's ownerId.
  *   - leaveHousehold:  caller removes their own membership (owners can't leave; they delete).
+ *   - addChore / addExpense: caller must be an ACTIVE member of the household, and every
+ *     user id in the payload (assignee, payer, split) must be an active member too.
  *
- * Day-to-day data (chores, expenses, rename) does NOT go through here: it uses
- * useMutations directly and is enforced by the collection RBAC in
- * src/schemas/household-schemas.ts.
+ * Creating chores/expenses lives here because DeepSpace's `create` permission is a
+ * plain boolean and can't check household membership. Everything else on existing rows
+ * (toggle done, reassign, delete, rename) uses useMutations and is enforced by the
+ * collection RBAC in src/schemas/household-schemas.ts.
  */
 
 import type { ActionHandler, ActionResult, ActionTools } from 'deepspace/worker'
 import type { Env } from '../../worker'
-import type { Household, TeamMember } from '../schemas'
+import type { Chore, Expense, Household, Repeat, TeamMember } from '../schemas'
 
 type Envelope<T> = { recordId: string; data: T }
 
@@ -43,6 +46,23 @@ async function findMembership(tools: ActionTools, teamId: string, userId: string
   return ((r.data as unknown as { records: Envelope<TeamMember>[] }).records[0]) ?? null
 }
 
+/** userIds of the household's active members — or null if `userId` isn't one of them. */
+async function activeMembersIfMember(tools: ActionTools, householdId: string, userId: string): Promise<Set<string> | null> {
+  if (!householdId) return null
+  const r = await tools.query('team_members', { where: { teamId: householdId }, limit: 500 })
+  if (!r.success) return null
+  const rows = (r.data as unknown as { records: Envelope<TeamMember>[] }).records
+  const active = new Set(rows.filter((m) => m.data.status !== 'removed').map((m) => m.data.userId))
+  return active.has(userId) ? active : null
+}
+
+const NOT_MEMBER = 'You are not a member of this household.'
+
+function ymd(v: unknown): string {
+  const s = str(v, 10)
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : ''
+}
+
 async function callerName(tools: ActionTools, userId: string): Promise<string> {
   // Server code sees full users rows; keep only the display name.
   const r = await tools.get('users', userId)
@@ -59,6 +79,43 @@ async function drain(tools: ActionTools, collection: string, where: Record<strin
 }
 
 export const actions: Record<string, ActionHandler<Env>> = {
+  addChore: async ({ userId, params, tools }): Promise<ActionResult<{ recordId: string }>> => {
+    const householdId = str(params.householdId)
+    const members = await activeMembersIfMember(tools, householdId, userId)
+    if (!members) return { success: false, error: NOT_MEMBER }
+    const title = str(params.title, 120)
+    if (!title) return { success: false, error: 'Give the chore a name.' }
+    const assigneeId = str(params.assigneeId)
+    if (assigneeId && !members.has(assigneeId)) return { success: false, error: 'Assignee must be in this household.' }
+    const repeat = (['none', 'daily', 'weekly'] as const).find((r) => r === params.repeat) ?? 'none'
+    const chore: Chore = { householdId, title, assigneeId, dueDate: ymd(params.dueDate), done: false, repeat: repeat as Repeat }
+    const r = await tools.create('chores', chore)
+    if (!r.success) return r
+    return { success: true, data: { recordId: r.data.recordId } }
+  },
+
+  addExpense: async ({ userId, params, tools }): Promise<ActionResult<{ recordId: string }>> => {
+    const householdId = str(params.householdId)
+    const members = await activeMembersIfMember(tools, householdId, userId)
+    if (!members) return { success: false, error: NOT_MEMBER }
+    const description = str(params.description, 120)
+    if (!description) return { success: false, error: 'Describe the expense.' }
+    const amountCents = Number(params.amountCents)
+    if (!Number.isInteger(amountCents) || amountCents <= 0 || amountCents > 10_000_000) {
+      return { success: false, error: 'Amount must be between $0.01 and $100,000.' }
+    }
+    const payerId = str(params.payerId)
+    if (!members.has(payerId)) return { success: false, error: 'Payer must be in this household.' }
+    const split = Array.isArray(params.splitAmong) ? [...new Set(params.splitAmong.map((v) => str(v)))] : []
+    if (split.length === 0 || split.some((id) => !members.has(id))) {
+      return { success: false, error: 'Split must be between members of this household.' }
+    }
+    const expense: Expense = { householdId, description, amountCents, payerId, splitAmong: split, spentOn: ymd(params.spentOn) }
+    const r = await tools.create('expenses', expense)
+    if (!r.success) return r
+    return { success: true, data: { recordId: r.data.recordId } }
+  },
+
   createHousehold: async ({ userId, params, tools }): Promise<ActionResult<{ householdId: string }>> => {
     const name = str(params.name)
     if (!name) return { success: false, error: 'Give your household a name.' }

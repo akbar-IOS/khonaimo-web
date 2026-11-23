@@ -7,7 +7,8 @@
 import { useState, type FormEvent } from 'react'
 import { useMutations, type RecordData } from 'deepspace'
 import { CalendarDays, Repeat as RepeatIcon, Trash2 } from 'lucide-react'
-import { Button, Input } from '@/components/ui'
+import { Button, Input, useToast } from '@/components/ui'
+import { callAction } from '@/lib/actions'
 import { cn } from '@/lib/utils'
 import { friendlyDate, todayIn } from '@/lib/dates'
 import { firstName, type Member } from '@/lib/household'
@@ -27,7 +28,9 @@ export function ChoresTab({
   members: Member[]
   userId: string
 }) {
-  const { create, put, remove, ready } = useMutations<Chore>('chores')
+  const { put, remove, ready } = useMutations<Chore>('chores')
+  const { error } = useToast()
+  const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState('')
   const [assigneeId, setAssigneeId] = useState(userId)
   const [dueDate, setDueDate] = useState(todayIn())
@@ -36,11 +39,19 @@ export function ChoresTab({
   const today = todayIn()
   const byId = new Map(members.map((m) => [m.userId, m]))
 
-  function add(e: FormEvent) {
+  async function add(e: FormEvent) {
     e.preventDefault()
     if (!title.trim()) return
-    void create({ householdId, title: title.trim().slice(0, 120), assigneeId, dueDate, done: false, repeat })
-    setTitle('')
+    setAdding(true)
+    try {
+      // Server action: checks I'm an active member of this household before inserting.
+      await callAction('addChore', { householdId, title, assigneeId, dueDate, repeat })
+      setTitle('')
+    } catch (err) {
+      error('Couldn’t add chore', (err as Error).message)
+    } finally {
+      setAdding(false)
+    }
   }
 
   function toggle(c: RecordData<Chore>) {
@@ -93,7 +104,7 @@ export function ChoresTab({
               </NativeSelect>
             </div>
             <div className="col-span-2 flex items-end sm:col-span-1">
-              <Button data-testid="add-chore" type="submit" className="w-full rounded-full" disabled={!ready || !title.trim()}>
+              <Button data-testid="add-chore" type="submit" className="w-full rounded-full" disabled={adding || !title.trim()}>
                 Add chore
               </Button>
             </div>

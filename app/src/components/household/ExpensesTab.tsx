@@ -8,6 +8,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { useMutations, type RecordData } from 'deepspace'
 import { ArrowRight, Trash2 } from 'lucide-react'
 import { Button, Input, useToast } from '@/components/ui'
+import { callAction } from '@/lib/actions'
 import { cn } from '@/lib/utils'
 import { formatMoney, netBalances, parseMoney, settleUp } from '@/lib/balances'
 import { friendlyDate, todayIn } from '@/lib/dates'
@@ -26,7 +27,8 @@ export function ExpensesTab({
   members: Member[]
   userId: string
 }) {
-  const { create, remove, ready } = useMutations<Expense>('expenses')
+  const { remove, ready } = useMutations<Expense>('expenses')
+  const [adding, setAdding] = useState(false)
   const { error } = useToast()
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
@@ -48,27 +50,36 @@ export function ExpensesTab({
     setSplit(next)
   }
 
-  function add(e: FormEvent) {
+  /** Server action: checks I'm an active member and payer/split are members before inserting. */
+  async function submitExpense(payload: Omit<Expense, 'householdId' | 'spentOn'>): Promise<boolean> {
+    setAdding(true)
+    try {
+      await callAction('addExpense', { householdId, spentOn: todayIn(), ...payload })
+      return true
+    } catch (err) {
+      error('Couldn’t save expense', (err as Error).message)
+      return false
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  async function add(e: FormEvent) {
     e.preventDefault()
     const cents = parseMoney(amount)
     if (!cents) return error('Check the amount', 'Use a positive number like 12.50')
     if (splitIds.length === 0) return error('Pick who it’s split between')
-    void create({
-      householdId,
-      description: description.trim().slice(0, 120),
-      amountCents: cents,
-      payerId,
-      splitAmong: splitIds,
-      spentOn: todayIn(),
-    })
-    setDescription('')
-    setAmount('')
-    setSplit(null)
+    const ok = await submitExpense({ description: description.trim(), amountCents: cents, payerId, splitAmong: splitIds })
+    if (ok) {
+      setDescription('')
+      setAmount('')
+      setSplit(null)
+    }
   }
 
   function recordPayment(from: string, to: string, cents: number) {
     // A payment is an expense paid by the debtor and "split" entirely to the creditor.
-    void create({ householdId, description: 'Settle up', amountCents: cents, payerId: from, splitAmong: [to], spentOn: todayIn() })
+    void submitExpense({ description: 'Settle up', amountCents: cents, payerId: from, splitAmong: [to] })
   }
 
   return (
@@ -89,7 +100,7 @@ export function ExpensesTab({
                 <span className={cn('font-semibold', t.to === userId && 'text-emerald-700')}>{nameOf(t.to)}</span>
                 <span className="ml-auto font-mono font-semibold">{formatMoney(t.cents)}</span>
                 {(t.from === userId || t.to === userId) && (
-                  <Button size="sm" variant="outline" className="rounded-full" disabled={!ready} onClick={() => recordPayment(t.from, t.to, t.cents)}>
+                  <Button size="sm" variant="outline" className="rounded-full" disabled={adding} onClick={() => recordPayment(t.from, t.to, t.cents)}>
                     Mark paid
                   </Button>
                 )}
@@ -158,7 +169,7 @@ export function ExpensesTab({
               </p>
             )}
           </fieldset>
-          <Button data-testid="add-expense" type="submit" className="w-full rounded-full" disabled={!ready || !description.trim() || !amount.trim()}>
+          <Button data-testid="add-expense" type="submit" className="w-full rounded-full" disabled={adding || !description.trim() || !amount.trim()}>
             Add expense
           </Button>
         </form>

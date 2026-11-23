@@ -56,13 +56,20 @@ export const teamMembersSchema: CollectionSchema = {
   },
 }
 
+/*
+ * Why create is false: DeepSpace's `create` permission is a plain boolean — it
+ * can't check that the new row's householdId is one of the caller's teams. So
+ * new chores/expenses go through the addChore / addExpense server actions,
+ * which verify active membership first. Reads, edits and deletes of existing
+ * rows stay on 'team' RBAC (the room checks the row's household).
+ */
 const choreMemberRules: RolePermissions = {
   read: 'team',
-  create: true,
+  create: false,
   update: 'team',
   delete: 'team',
-  // householdId is set on create only; it can't be moved to another household.
-  writableFields: ['householdId', 'title', 'assigneeId', 'dueDate', 'done', 'doneAt', 'doneBy', 'repeat'],
+  // householdId is immutable and not writable: a chore can't be moved to another household.
+  writableFields: ['title', 'assigneeId', 'dueDate', 'done', 'doneAt', 'doneBy', 'repeat'],
 }
 
 export const choresSchema: CollectionSchema = {
@@ -84,12 +91,12 @@ export const choresSchema: CollectionSchema = {
   },
 }
 
+// Expenses are immutable once logged (the UI never edits them): members can read and delete only.
 const expenseMemberRules: RolePermissions = {
   read: 'team',
-  create: true,
-  update: 'team',
+  create: false,
+  update: false,
   delete: 'team',
-  writableFields: ['householdId', 'description', 'amountCents', 'payerId', 'splitAmong', 'spentOn'],
 }
 
 export const expensesSchema: CollectionSchema = {

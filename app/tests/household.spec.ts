@@ -4,33 +4,11 @@
  * both → chores and expenses sync live both ways → balances agree → member is
  * refused owner-only actions by the server → owner deletes the household.
  */
-import type { Page } from '@playwright/test'
 import { test, expect, loadAllTestAccounts } from 'deepspace/testing'
+import { action } from './helpers/session'
 
 test.skip(loadAllTestAccounts().length < 2, 'Needs 2 usable test accounts (npx deepspace test accounts create …)')
 test.setTimeout(180_000)
-
-/** Call a server action as the page's signed-in user (same path the UI uses). */
-async function action(page: Page, name: string, params: Record<string, unknown>) {
-  return page.evaluate(
-    async ({ name, params }) => {
-      // Same call deepspace's getAuthToken() makes: trade the session cookie for a JWT.
-      const res = await fetch('/api/auth/token', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-      }).catch(() => null)
-      const token = res && res.ok ? ((await res.json()) as { token?: string }).token : undefined
-      const r = await fetch(`/api/actions/${name}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify(params),
-      })
-      return (await r.json()) as { success: boolean; error?: string; data?: unknown }
-    },
-    { name, params },
-  )
-}
 
 test('two housemates share chores, expenses and presence live', async ({ users }) => {
   const [owner, mate] = await users(2)
