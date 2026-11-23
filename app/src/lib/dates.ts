@@ -20,6 +20,12 @@ export function nextDueDate(due: string, repeat: 'daily' | 'weekly', today: stri
   return next
 }
 
+/** friendlyDate for use mid-sentence: "due today", but "due Mon, Nov 24". */
+export function friendlyDateInline(ymd: string, today = todayIn()): string {
+  const s = friendlyDate(ymd, today)
+  return s === 'Today' || s === 'Tomorrow' || s === 'Yesterday' ? s.toLowerCase() : s
+}
+
 /** "Today", "Tomorrow", "Yesterday", or e.g. "Mon, Nov 24". */
 export function friendlyDate(ymd: string, today = todayIn()): string {
   if (ymd === today) return 'Today'

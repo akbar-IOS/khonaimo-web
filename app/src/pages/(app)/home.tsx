@@ -1,15 +1,18 @@
 /**
- * /home — your households. Create one, or join with an invite code.
+ * /home: your households. Create one, or join with an invite code.
  * Dynamic (under (app)/) so signed-out visitors get a sign-in card instead of a blank gate.
  */
 
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthOverlay, useAuth, useAuthProfileReady } from 'deepspace'
-import { ChevronRight, Home as HomeIcon, Plus, Ticket } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { Button, Input, useToast } from '@/components/ui'
+import { BrandMark } from '@/components/Brand'
 import { callAction } from '@/lib/actions'
+import { takePendingInvite } from '@/lib/invite'
 import { firstName, useMyHouseholds } from '@/lib/household'
+import { cn } from '@/lib/utils'
 
 const EMOJIS = ['🏠', '🏡', '🏢', '🛋️', '🌿', '🐈', '🍳', '🌻']
 
@@ -22,13 +25,18 @@ export default function HomePage() {
 function SignedOutWelcome() {
   const [open, setOpen] = useState(false)
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center px-6 text-center">
-      <span aria-hidden className="grid h-16 w-16 place-items-center rounded-2xl bg-primary text-3xl">🏡</span>
-      <h1 className="mt-5 text-2xl font-bold">Welcome to KhonaiMo</h1>
-      <p className="mt-2 text-muted-foreground">Sign in to see your households, chores and shared expenses.</p>
-      <Button data-testid="home-sign-in" className="mt-6 w-full rounded-full" size="lg" onClick={() => setOpen(true)}>
+    <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-6">
+      <BrandMark size={56} />
+      <h1 className="font-display mt-6 text-3xl font-extrabold">Sign in to see your household</h1>
+      <p className="mt-3 text-muted-foreground">
+        Your chores, shared costs and housemates live here. Have an invite link? Sign in first, then open it again.
+      </p>
+      <Button data-testid="home-sign-in" className="km-press mt-8 min-h-12 w-full rounded-full text-base" onClick={() => setOpen(true)}>
         Sign in
       </Button>
+      <Link to="/" className="mt-4 text-center text-sm text-muted-foreground underline-offset-4 hover:underline">
+        What is KhonaiMo?
+      </Link>
       {open && <AuthOverlay onClose={() => setOpen(false)} />}
     </div>
   )
@@ -43,6 +51,13 @@ function Households() {
   const [emoji, setEmoji] = useState(EMOJIS[0])
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState<'create' | 'join' | null>(null)
+  const empty = !loading && households.length === 0
+
+  // Back from sign-in with an invite link still pending: finish joining.
+  useEffect(() => {
+    const pending = takePendingInvite()
+    if (pending) navigate(`/join/${pending}`, { replace: true })
+  }, [navigate])
 
   async function create(e: FormEvent) {
     e.preventDefault()
@@ -51,7 +66,7 @@ function Households() {
       const { householdId } = await callAction<{ householdId: string }>('createHousehold', { name, emoji })
       navigate(`/h/${householdId}`)
     } catch (err) {
-      error('Could not create household', (err as Error).message)
+      error('Couldn’t create the household', (err as Error).message)
     } finally {
       setBusy(null)
     }
@@ -65,86 +80,96 @@ function Households() {
       // Full navigation so the realtime subscriptions re-open with the new team membership.
       window.location.assign(`/h/${householdId}`)
     } catch (err) {
-      error('Could not join', (err as Error).message)
+      error('Couldn’t join', (err as Error).message)
       setBusy(null)
     }
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 pb-16 pt-6 sm:pt-10">
-      <h1 className="text-2xl font-bold sm:text-3xl">
-        Hi{user?.name ? `, ${firstName(user.name)}` : ''} 👋
+    <div className="mx-auto max-w-3xl px-4 pb-20 pt-8 sm:pt-12">
+      <h1 className="font-display text-3xl font-extrabold sm:text-4xl">
+        {user?.name ? `Salom, ${firstName(user.name)}` : 'Your households'}
       </h1>
-      <p className="mt-1 text-muted-foreground">Pick a household, or start a new one.</p>
+      <p className="mt-2 text-muted-foreground">
+        {empty ? 'Start a household for your place, or join the one your housemates made.' : 'Pick a household to see what needs doing.'}
+      </p>
 
-      <section className="mt-6 space-y-3" aria-label="Your households">
-        {loading ? (
-          <div className="h-20 animate-pulse rounded-2xl bg-muted" />
-        ) : households.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-muted-foreground">
-            <HomeIcon className="mx-auto mb-2 h-6 w-6" aria-hidden />
-            You’re not in a household yet.
-          </div>
-        ) : (
-          households.map((h) => (
-            <Link
-              key={h.recordId}
-              to={`/h/${h.recordId}`}
-              data-testid="household-link"
-              className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-card-hover)]"
-            >
-              <span aria-hidden className="grid h-12 w-12 place-items-center rounded-xl bg-secondary text-2xl">{h.data.emoji || '🏠'}</span>
-              <span className="flex-1 text-lg font-semibold">{h.data.name}</span>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden />
-            </Link>
-          ))
-        )}
-      </section>
+      {loading ? (
+        <div className="mt-8 h-20 animate-pulse rounded-2xl bg-muted" aria-busy="true" />
+      ) : (
+        households.length > 0 && (
+          <ul aria-label="Your households" className="mt-8 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+            {households.map((h) => (
+              <li key={h.recordId}>
+                <Link
+                  to={`/h/${h.recordId}`}
+                  data-testid="household-link"
+                  className="group flex min-h-16 items-center gap-4 px-4 py-3 transition-colors hover:bg-secondary"
+                >
+                  <span aria-hidden className="grid h-12 w-12 place-items-center rounded-xl bg-accent text-2xl">{h.data.emoji || '🏠'}</span>
+                  <span className="font-display flex-1 truncate text-lg font-extrabold">{h.data.name}</span>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )
+      )}
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <form onSubmit={create} className="rounded-2xl border border-border bg-card p-5" aria-label="Create a household">
-          <h2 className="flex items-center gap-2 font-semibold"><Plus className="h-4 w-4" aria-hidden /> New household</h2>
+      <div className={cn('grid gap-4 sm:grid-cols-[1.25fr_1fr]', empty ? 'mt-8' : 'mt-10')}>
+        <form onSubmit={create} className="rounded-2xl border border-border bg-card p-5 sm:p-6" aria-labelledby="new-hh">
+          <h2 id="new-hh" className="font-display text-xl font-extrabold">Start a household</h2>
+          <label htmlFor="hh-name" className="mt-4 block text-sm font-medium">Name</label>
           <Input
+            id="hh-name"
             data-testid="new-household-name"
-            className="mt-3"
-            placeholder="e.g. Maple St. Apartment"
+            className="mt-1.5 h-11"
+            placeholder="Maple Street flat…"
+            autoComplete="off"
             value={name}
             maxLength={60}
             onChange={(e) => setName(e.target.value)}
-            aria-label="Household name"
           />
-          <div className="mt-3 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Icon">
+          <p id="hh-icon" className="mt-4 text-sm font-medium">Icon</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5" role="radiogroup" aria-labelledby="hh-icon">
             {EMOJIS.map((em) => (
               <button
                 type="button"
                 key={em}
                 role="radio"
                 aria-checked={emoji === em}
+                aria-label={`Icon ${em}`}
                 onClick={() => setEmoji(em)}
-                className={`grid h-9 w-9 place-items-center rounded-lg text-lg ${emoji === em ? 'bg-accent ring-2 ring-primary' : 'bg-secondary'}`}
+                className={cn(
+                  'grid h-11 w-11 place-items-center rounded-xl text-xl transition-colors',
+                  emoji === em ? 'bg-accent ring-2 ring-primary' : 'bg-secondary hover:bg-accent',
+                )}
               >
                 {em}
               </button>
             ))}
           </div>
-          <Button data-testid="create-household" type="submit" className="mt-4 w-full rounded-full" disabled={!name.trim() || busy !== null}>
+          <Button data-testid="create-household" type="submit" className="km-press mt-5 min-h-11 w-full rounded-full" disabled={!name.trim() || busy !== null}>
             {busy === 'create' ? 'Creating…' : 'Create household'}
           </Button>
         </form>
 
-        <form onSubmit={join} className="rounded-2xl border border-border bg-card p-5" aria-label="Join a household">
-          <h2 className="flex items-center gap-2 font-semibold"><Ticket className="h-4 w-4" aria-hidden /> Join with a code</h2>
+        <form onSubmit={join} className="rounded-2xl border border-dashed border-input bg-transparent p-5 sm:p-6" aria-labelledby="join-hh">
+          <h2 id="join-hh" className="font-display text-xl font-extrabold">Join with a code</h2>
+          <p className="mt-1 text-sm text-muted-foreground">The owner finds it under Members.</p>
+          <label htmlFor="join-code" className="mt-4 block text-sm font-medium">Invite code</label>
           <Input
+            id="join-code"
             data-testid="join-code"
-            className="mt-3 font-mono uppercase tracking-widest"
-            placeholder="ABC123"
+            className="tabular mt-1.5 h-11 text-lg font-semibold uppercase tracking-[0.25em]"
+            placeholder="ABC234"
+            autoComplete="off"
+            spellCheck={false}
             value={code}
             maxLength={12}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
-            aria-label="Invite code"
           />
-          <p className="mt-3 text-xs text-muted-foreground">Ask the household owner for their 6-letter code or invite link.</p>
-          <Button data-testid="join-household" type="submit" variant="outline" className="mt-4 w-full rounded-full" disabled={!code.trim() || busy !== null}>
+          <Button data-testid="join-household" type="submit" variant="outline" className="km-press mt-5 min-h-11 w-full rounded-full" disabled={!code.trim() || busy !== null}>
             {busy === 'join' ? 'Joining…' : 'Join household'}
           </Button>
         </form>

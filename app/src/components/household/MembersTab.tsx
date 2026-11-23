@@ -72,10 +72,10 @@ export function MembersTab({
   return (
     <div className="space-y-4">
       <Card>
-        <h2 className="font-semibold">Invite housemates</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Share the code or the link. Anyone with it can join.</p>
-        <div className="mt-3 flex items-center gap-2">
-          <code data-testid="invite-code" className="rounded-xl bg-secondary px-4 py-2 font-mono text-xl font-bold tracking-[0.3em]">
+        <h2 className="font-display text-lg font-extrabold">Invite housemates</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Send the link, or read out the code. Anyone who has it can join, so reset it if it leaks.</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <code data-testid="invite-code" className="font-display tabular rounded-xl bg-accent px-4 py-2 text-2xl font-extrabold tracking-[0.25em] text-accent-foreground">
             {household.data.inviteCode}
           </code>
           <Button variant="outline" className="rounded-full" onClick={copyInvite}>
@@ -91,7 +91,7 @@ export function MembersTab({
       </Card>
 
       <Card>
-        <h2 className="font-semibold">Members ({members.length})</h2>
+        <h2 className="font-display text-lg font-extrabold">Members</h2>
         <ul className="mt-3 divide-y divide-border" data-testid="member-list">
           {members.map((m) => (
             <li key={m.userId} data-testid="member-row" className="flex items-center gap-3 py-2.5">
@@ -101,7 +101,7 @@ export function MembersTab({
                 <p className="text-xs text-muted-foreground">{online.has(m.userId) ? 'Online now' : 'Offline'}</p>
               </div>
               {m.role === 'owner' ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground">
+                <span className="inline-flex items-center gap-1 rounded-full bg-saffron/25 px-2.5 py-1 text-xs font-semibold text-[#7a5410]">
                   <Crown className="h-3.5 w-3.5" aria-hidden /> Owner
                 </span>
               ) : isOwner ? (
@@ -120,7 +120,7 @@ export function MembersTab({
 
       {isOwner ? (
         <Card>
-          <h2 className="font-semibold">Household settings</h2>
+          <h2 className="font-display text-lg font-extrabold">Household settings</h2>
           <div className="mt-3 flex gap-2">
             <Input data-testid="rename-input" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} aria-label="Household name" />
             <Button data-testid="rename-save" variant="outline" disabled={!ready || !name.trim() || name.trim() === household.data.name} onClick={rename}>
@@ -190,9 +190,9 @@ function DailyResetCard() {
 
   return (
     <Card>
-      <h2 className="font-semibold">🔁 Daily chore reset</h2>
+      <h2 className="font-display text-lg font-extrabold">Overnight chore reset</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Every night at 12:05 AM (New York time) a scheduled job reopens finished daily and weekly chores on their next due date.
+        Each night at 12:05 AM New York time, finished daily and weekly chores reopen on their next due date, so nobody has to add them again.
       </p>
       <dl className="mt-3 grid grid-cols-2 gap-2 text-sm" data-testid="cron-status">
         <div className="rounded-xl bg-secondary p-2.5">
@@ -202,7 +202,7 @@ function DailyResetCard() {
         <div className="rounded-xl bg-secondary p-2.5">
           <dt className="text-xs text-muted-foreground">Last run</dt>
           <dd className="font-medium" data-testid="cron-last-run">
-            {last ? `${last.success ? 'OK' : 'Failed'} · ${new Date(last.startedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : 'Not yet'}
+            {last ? `${last.success ? 'Worked' : 'Failed'}, ${new Date(last.startedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : 'Not yet'}
           </dd>
         </div>
       </dl>

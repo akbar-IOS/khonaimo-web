@@ -38,6 +38,10 @@
   --color-input: rgba(60, 64, 67, 0.6);
   --color-ring: #818cf8;
   --radius: 0.5rem;
+  /* KhonaiMo atlas accents (flat, theme-independent) */
+  --color-saffron: #f1b030;
+  --color-pomegranate: #c4343f;
+  --color-leaf: #2c8f63;
 
   /*
    * Map the rounded-* utilities onto --radius so a theme (or you) can change

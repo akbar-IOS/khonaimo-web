@@ -45,31 +45,100 @@
   --color-shell-panel: #ffffff;
 }
 
-/* KhonaiMo — warm "home" palette: cream paper, leafy green primary, terracotta accent. */
+/*
+ * KhonaiMo — "atlas" palette, after Tajik atlas (ikat) silk: chalk ground,
+ * ink text, atlas teal for actions, saffron for "done", pomegranate for
+ * overdue / money owed, leaf for "owed to you" / online. Flat colour only.
+ */
 [data-theme="khonaimo"] {
   color-scheme: light;
-  --radius: 0.875rem;
-  --color-background: #fbf7f0;
-  --color-foreground: #2b2620;
+  --radius: 0.75rem;
+  --color-background: #f6f7f4;
+  --color-foreground: #16202a;
   --color-card: #ffffff;
-  --color-card-foreground: #2b2620;
+  --color-card-foreground: #16202a;
   --color-popover: #ffffff;
-  --color-popover-foreground: #2b2620;
-  --color-primary: #2f7a5b;
+  --color-popover-foreground: #16202a;
+  --color-primary: #0e6b70;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #f1ebe0;
-  --color-secondary-foreground: #2b2620;
-  --color-muted: #f1ebe0;
-  --color-muted-foreground: #6f665a;
-  --color-accent: #fde7d9;
-  --color-accent-foreground: #8a3b16;
-  --color-destructive: #c2410c;
+  --color-secondary: #eceee8;
+  --color-secondary-foreground: #16202a;
+  --color-muted: #eceee8;
+  --color-muted-foreground: #5a6470;
+  --color-accent: #e3efee;
+  --color-accent-foreground: #0b4f53;
+  --color-destructive: #c4343f;
   --color-destructive-foreground: #ffffff;
-  --color-border: #e8dfd0;
-  --color-input: #e2d8c6;
-  --color-ring: #2f7a5b;
-  --shadow-card: 0 1px 2px 0 rgba(60, 45, 20, 0.05);
-  --shadow-card-hover: 0 4px 14px 0 rgba(60, 45, 20, 0.08);
-  --color-shell: #f6f0e5;
+  --color-border: #dfe2db;
+  --color-input: #cfd4cc;
+  --color-ring: #0e6b70;
+  --color-saffron: #f1b030;
+  --color-pomegranate: #c4343f;
+  --color-leaf: #2c8f63;
+  --shadow-card: 0 1px 0 0 #dfe2db;
+  --shadow-card-hover: 0 6px 20px -8px rgba(22, 32, 42, 0.18);
+  --color-shell: #eef0eb;
   --color-shell-panel: #ffffff;
+}
+
+[data-theme="khonaimo"] h1, [data-theme="khonaimo"] h2, [data-theme="khonaimo"] h3 { text-wrap: balance; }
+[data-theme="khonaimo"] p { text-wrap: pretty; }
+[data-theme="khonaimo"] button, [data-theme="khonaimo"] a, [data-theme="khonaimo"] select { touch-action: manipulation; }
+[data-theme="khonaimo"] body {
+  -webkit-tap-highlight-color: rgba(14, 107, 112, 0.12);
+  font-family: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-feature-settings: 'tnum' 0;
+}
+
+/* Display face for headings and the wordmark. */
+.font-display {
+  font-family: 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+
+/* Money and counts line up in columns without a monospace face. */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/*
+ * The atlas band: a woven ikat-style zigzag in teal, saffron and pomegranate.
+ * Used in exactly two places — the household banner and the hero's app frame.
+ */
+.atlas-band {
+  background-color: #0e6b70;
+  background-image:
+    linear-gradient(135deg, #f1b030 25%, transparent 25%),
+    linear-gradient(225deg, #f1b030 25%, transparent 25%),
+    linear-gradient(315deg, #c4343f 25%, transparent 25%),
+    linear-gradient(45deg, #c4343f 25%, transparent 25%);
+  background-size: 22px 22px;
+  background-position: 0 0, 0 0, 11px -11px, 11px -11px;
+}
+
+/* One entrance on load for the landing hero; nothing else animates on its own. */
+@keyframes km-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.km-enter { animation: km-enter 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.km-enter-late { animation: km-enter 640ms 140ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+/* A check that lands when a chore is done. */
+@keyframes km-pop { 0% { transform: scale(0.6); } 70% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.km-pop { animation: km-pop 220ms ease-out both; }
+
+/* Buttons and links answer the pointer: step up on hover, press on click. */
+[data-theme="khonaimo"] .km-press { transition: transform 120ms ease, box-shadow 160ms ease, background-color 160ms ease; }
+[data-theme="khonaimo"] .km-press:hover { transform: translateY(-1px); }
+[data-theme="khonaimo"] .km-press:active { transform: translateY(0) scale(0.98); }
+
+[data-theme="khonaimo"] :focus-visible {
+  outline: 2px solid #0e6b70;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .km-enter, .km-enter-late, .km-pop { animation: none; }
+  [data-theme="khonaimo"] .km-press, [data-theme="khonaimo"] .km-press:hover, [data-theme="khonaimo"] .km-press:active { transform: none; transition: none; }
 }

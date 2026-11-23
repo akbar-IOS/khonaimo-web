@@ -11,7 +11,7 @@ import { Button, Input, useToast } from '@/components/ui'
 import { callAction } from '@/lib/actions'
 import { cn } from '@/lib/utils'
 import { formatMoney, netBalances, parseMoney, settleUp } from '@/lib/balances'
-import { friendlyDate, todayIn } from '@/lib/dates'
+import { friendlyDateInline, todayIn } from '@/lib/dates'
 import { firstName, type Member } from '@/lib/household'
 import type { Expense } from '@/schemas'
 import { Card, FieldLabel, MemberAvatar, NativeSelect } from './bits'
@@ -84,23 +84,23 @@ export function ExpensesTab({
 
   return (
     <div className="space-y-4">
-      <Card className={cn(myNet > 0 ? 'bg-emerald-50' : myNet < 0 ? 'bg-accent' : '')}>
+      <Card className={cn('border-2', myNet > 0 ? 'border-leaf/40 bg-[#eef7f1]' : myNet < 0 ? 'border-pomegranate/30 bg-[#fbefef]' : '')}>
         <p className="text-sm text-muted-foreground">Your balance</p>
-        <p data-testid="my-balance" className="mt-1 text-2xl font-bold">
-          {myNet === 0 ? 'All settled up 🎉' : myNet > 0 ? `You’re owed ${formatMoney(myNet)}` : `You owe ${formatMoney(-myNet)}`}
+        <p data-testid="my-balance" className={cn('font-display tabular mt-1 text-3xl font-extrabold', myNet > 0 && 'text-[#1f6e4b]', myNet < 0 && 'text-pomegranate')}>
+          {myNet === 0 ? 'You’re all square' : myNet > 0 ? `You’re owed ${formatMoney(myNet)}` : `You owe ${formatMoney(-myNet)}`}
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">Household spending so far: {formatMoney(total)}</p>
+        <p className="tabular mt-1 text-sm text-muted-foreground">The household has logged {formatMoney(total)} of shared costs.</p>
 
         {transfers.length > 0 && (
           <ul className="mt-4 space-y-2" data-testid="settle-up">
             {transfers.map((t) => (
-              <li key={`${t.from}-${t.to}`} data-testid="transfer" className="flex items-center gap-2 rounded-xl bg-card/80 p-2.5 text-sm">
+              <li key={`${t.from}-${t.to}`} data-testid="transfer" className="flex min-h-14 flex-wrap items-center gap-2 rounded-xl bg-card px-3 py-2 text-sm">
                 <span className={cn('font-semibold', t.from === userId && 'text-destructive')}>{nameOf(t.from)}</span>
                 <ArrowRight className="h-4 w-4 text-muted-foreground" aria-label="pays" />
-                <span className={cn('font-semibold', t.to === userId && 'text-emerald-700')}>{nameOf(t.to)}</span>
-                <span className="ml-auto font-mono font-semibold">{formatMoney(t.cents)}</span>
+                <span className={cn('font-semibold', t.to === userId && 'text-[#1f6e4b]')}>{nameOf(t.to)}</span>
+                <span className="tabular ml-auto font-semibold">{formatMoney(t.cents)}</span>
                 {(t.from === userId || t.to === userId) && (
-                  <Button size="sm" variant="outline" className="rounded-full" disabled={adding} onClick={() => recordPayment(t.from, t.to, t.cents)}>
+                  <Button size="sm" variant="outline" className="km-press min-h-10 rounded-full" disabled={adding} onClick={() => recordPayment(t.from, t.to, t.cents)}>
                     Mark paid
                   </Button>
                 )}
@@ -116,7 +116,8 @@ export function ExpensesTab({
             <Input
               data-testid="expense-description"
               className="col-span-2"
-              placeholder="What was it? e.g. Groceries"
+              placeholder="e.g. Groceries…"
+              autoComplete="off"
               value={description}
               maxLength={120}
               onChange={(e) => setDescription(e.target.value)}
@@ -126,6 +127,7 @@ export function ExpensesTab({
               data-testid="expense-amount"
               inputMode="decimal"
               placeholder="$0.00"
+              autoComplete="off"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               aria-label="Amount in dollars"
@@ -153,7 +155,7 @@ export function ExpensesTab({
                     data-testid="split-member"
                     onClick={() => toggleSplit(m.userId)}
                     className={cn(
-                      'flex items-center gap-1.5 rounded-full border py-1 pl-1 pr-3 text-sm',
+                      'flex min-h-11 items-center gap-1.5 rounded-full border py-1 pl-1 pr-3 text-sm',
                       on ? 'border-primary bg-primary/10 font-medium' : 'border-border text-muted-foreground',
                     )}
                   >
@@ -169,33 +171,33 @@ export function ExpensesTab({
               </p>
             )}
           </fieldset>
-          <Button data-testid="add-expense" type="submit" className="w-full rounded-full" disabled={adding || !description.trim() || !amount.trim()}>
+          <Button data-testid="add-expense" type="submit" className="km-press min-h-11 w-full rounded-full" disabled={adding || !description.trim() || !amount.trim()}>
             Add expense
           </Button>
         </form>
       </Card>
 
-      <ul className="space-y-2" data-testid="expense-list">
+      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card" data-testid="expense-list">
         {expenses.length === 0 && (
-          <li className="rounded-2xl border border-dashed border-border p-6 text-center text-muted-foreground">No expenses yet.</li>
+          <li className="px-6 py-10 text-center"><p className="font-display text-xl font-extrabold">No shared costs yet</p><p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">Log the next grocery run or bill above, and KhonaiMo works out who owes whom.</p></li>
         )}
         {expenses.map((e) => {
           const x = e.data
           const settle = x.description === 'Settle up'
           return (
-            <li key={e.recordId} data-testid="expense-row" className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-card)]">
+            <li key={e.recordId} data-testid="expense-row" className="flex items-center gap-3 py-2 pl-3 pr-1.5">
               <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-lg">{settle ? '🤝' : '🧾'}</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">
                   {settle ? `${nameOf(x.payerId)} paid ${nameOf(x.splitAmong?.[0] ?? '')}` : x.description}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {settle ? 'Payment' : `${nameOf(x.payerId)} paid · split ${x.splitAmong?.length ?? 0} ways`}
-                  {x.spentOn && ` · ${friendlyDate(x.spentOn)}`}
+                  {settle ? 'Payment' : `${nameOf(x.payerId)} paid, split ${x.splitAmong?.length ?? 0} ways`}
+                  {x.spentOn && `, ${friendlyDateInline(x.spentOn)}`}
                 </p>
               </div>
-              <span className="font-mono font-semibold">{formatMoney(x.amountCents)}</span>
-              <button type="button" onClick={() => void remove(e.recordId)} disabled={!ready} aria-label={`Delete ${x.description}`} className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-destructive">
+              <span className="tabular font-semibold">{formatMoney(x.amountCents)}</span>
+              <button type="button" onClick={() => void remove(e.recordId)} disabled={!ready} aria-label={`Delete ${x.description}`} className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-destructive">
                 <Trash2 className="h-4 w-4" aria-hidden />
               </button>
             </li>

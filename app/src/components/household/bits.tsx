@@ -4,7 +4,7 @@ import type { ReactNode, SelectHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 import type { Member } from '@/lib/household'
 
-const AVATAR_COLORS = ['#2f7a5b', '#c2410c', '#7c5cbf', '#0e7490', '#b45309', '#be185d', '#4d7c0f']
+const AVATAR_COLORS = ['#0e6b70', '#c4343f', '#2c8f63', '#b7791f', '#1d5f8f', '#9a3b5c', '#55702b']
 
 function colorFor(id: string): string {
   let h = 0
@@ -27,6 +27,8 @@ export function MemberAvatar({
         <img
           src={member.imageUrl}
           alt=""
+          width={size}
+          height={size}
           referrerPolicy="no-referrer"
           className="h-full w-full rounded-full object-cover ring-2 ring-card"
         />
@@ -44,7 +46,7 @@ export function MemberAvatar({
           data-testid={online ? 'online-dot' : 'offline-dot'}
           className={cn(
             'absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-card',
-            online ? 'bg-emerald-500' : 'bg-stone-300',
+            online ? 'bg-leaf' : 'bg-[#c9cec6]',
           )}
         />
       )}
@@ -54,7 +56,7 @@ export function MemberAvatar({
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <section className={cn('rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:p-5', className)}>
+    <section className={cn('rounded-2xl border border-border bg-card p-4 sm:p-5', className)}>
       {children}
     </section>
   )
@@ -65,7 +67,7 @@ export function NativeSelect({ className, ...props }: SelectHTMLAttributes<HTMLS
     <select
       {...props}
       className={cn(
-        'h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'h-11 w-full cursor-pointer rounded-lg border border-input bg-card px-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
         className,
       )}
     />
