@@ -1,0 +1,21 @@
+# Dependencies & build output
+node_modules/
+dist/
+.wrangler/
+*.tgz
+
+# Secrets — never commit (DeepSpace writes local dev secrets to .dev.vars)
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+.deepspace/
+
+# Test artifacts
+test-results/
+playwright-report/
+
+# Local agent/editor state and session transcripts
+.claude/
+claude-*.log
+.DS_Store
