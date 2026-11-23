@@ -86,11 +86,11 @@ Run the tests yourself from `app/`: `npx deepspace test run all` (starts its own
 ## Known unfinished edges
 
 - **Cron "Run now" was not clicked in a browser.** Test users aren't app admins. The reset rule is unit-tested, and the schedule is armed in production (first scheduled run: 00:05 ET tonight). Check with `npx deepspace logs --search cron` tomorrow, or click Run now after signing in.
-- **`create` on chores/expenses is role-based, not team-checked.** DeepSpace's `create` permission is boolean, so a signed-in user who forged a request could insert a chore tagged with a household id they don't belong to. They still couldn't read, update, or see anything in that household. A fix would route creates through a membership-checking server action.
+- ~~`create` on chores/expenses was role-based only~~ **Fixed in phase 2:** creates go through membership-checked server actions (`addChore`/`addExpense`); see `tests/security.spec.ts`.
 - **Removed members see stale data until they reload.** Their open socket isn't re-scoped instantly. After a reload they get nothing (verified by the test).
-- **Presence scope isn't membership-checked.** Someone who knew a household id could join its PresenceRoom and see first names of who is online, but no household data.
+- ~~Presence scope wasn't membership-checked~~ **Fixed in phase 2:** `/ws/presence/household:<id>` requires a verified token and active membership.
 - **Equal splits only** (no custom shares or percentages), and only USD formatting.
-- **Invite links while signed out:** `/join/<code>` shows the sign-in gate and joins after sign-in on that page. I haven't verified in a real browser whether OAuth returns to the same `/join/...` URL. Entering the code on `/home` always works.
+- ~~Invite links while signed out~~ **Fixed in phase 2:** the invite code is kept across OAuth; covered by `tests/invite.spec.ts`.
 - Test accounts' emails include "khonaimo" (the docs suggest app-neutral names; harmless).
 
 ## Repo map
