@@ -81,7 +81,7 @@ One room gives a single "my households" query across all households and needs no
 | Signed-in flow in your Chrome | Blocked: Chrome extension can't act on Google sign-in | ⏳ see NEEDS AKBAR |
 | Production health | `npx deepspace logs`: no errors; cron room answering `/internal/cron/tasks` (schedule armed) | ✅ |
 
-Run the tests yourself (from `app/`, with the dev server on 5173 already running): `npx deepspace test run all --port 5180` and `npx vitest run`.
+Run the tests yourself from `app/`: `npx deepspace test run all` (starts its own server; add `--port 5180` if 5173 is busy) and `npx vitest run`.
 
 ## Known unfinished edges
 
